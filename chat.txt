@@ -1,0 +1,259 @@
+Mr. Doge — Today at 12:21 PM
+    I need a way to check `hasForegroundLove()`, in order to:
+
+    ```ahk
+    if (hasForegroundLove()) {
+        SetForeGroundWindow()
+    } else {
+        ...
+        another strategy
+    }
+    ```
+
+    is there an alternative way to checking hasForegroundLove() other than trying AllowSetForegroundWindow ?
+
+    ```ahk
+    if (DllCall("AllowSetForegroundWindow","Uint",DllCall("GetCurrentProcessId"))) {
+        DllCall("SetForegroundWindow","Ptr",hwnd)
+    } else {
+        ...
+        another strategy
+    }
+    ```
+
+    <https://devblogs.microsoft.com/oldnewthing/20090226-00/?p=19013>
+    Upon WM_HOTKEY, the window has foreground love
+    bonus:
+    <https://devblogs.microsoft.com/oldnewthing/20090220-00/?p=19083>
+    A new process has foreground love
+
+    I want to check whether the thread came from WM_HOTKEY
+    or
+    I want to check whether the hotkey was registered with RegisterHotKey, as opposed to keyboard hook
+
+    another strategy is to check whether:
+    https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/hotkey.h#L186
+    HotkeyTypeType mType;
+    is 1(HK_KEYBD_HOOK) or 0(HK_NORMAL)
+
+    but that is not exposed to AutoHotkey scripts, only the name is, through `ThisHotkey`
+
+    I can get the info by memory reading:
+    AutoHotkey_2.0.10:
+    ```
+    "AutoHotkey64.exe"+0x00125F90: Hotkey **Hotkey::shk = NULL;
+    0x0,0x8,0x10,0x18,0x20,...
+    0x20 : LPTSTR mName; 0x12 : HotkeyTypeType mType;
+    ```
+
+    ^this method will not survive updates
+
+    once I updated to AutoHotkey_2.1-alpha.8, the offset changed:
+    ```
+    "AutoHotkey64.exe"+0x0012C1B0
+    ```
+
+Monty Python — Today at 12:21 PM
+    source/hotkey.h line 186
+    HotkeyTypeType mType;
+
+geek.ahk — Today at 12:29 PM
+    I'd be inclined to just write 
+    ```ahk
+    if !DllCall("SetForegroundWindow", "Ptr", hwnd) {
+        ; another strategy
+    }
+    ```
+
+Reply to: geek.ahk — Today at 12:29 PM
+Mr. Doge — Today at 12:40 PM
+    If SetForegroundWindow fails, the target window's icon in the taskbar will start blinking blinking, flashing orange
+
+geek.ahk — Today at 12:41 PM
+    is that an issue, if you immediately proceed with some other method to set the foreground window?
+
+Reply to: geek.ahk — Today at 12:41 PM
+Mr. Doge — Today at 12:46 PM
+    During testing: window1 -> window2 -> window1, but I do it fast, 100ms
+    The switching worked, twice, but window2 remains flashing
+
+    My theory is:
+    Once the flashing window becomes the foreground window, it doesn't immediately clear the flashing state, so if you switch away before the flashing state is cleared, it will keep flashing
+
+    I can provide a script to reproduce the flashing
+
+geek.ahk — Today at 12:47 PM
+    that's ok
+    I seem to have missed something though, why use SetForegroundWindow instead of the built-in WinActivate command?
+
+Reply to: geek.ahk — Today at 12:47 PM
+Mr. Doge — Today at 12:56 PM
+    WinActivate uses SetForegroundWindow under the hood, if I remember correctly(it's Teams or another app), AttachThreadInput() will freeze Teams.exe
+    https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/window.cpp#L192
+
+    https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/window.cpp#L260
+    Assume the Hotkey is: ^+#something::, then you call WinActivate:
+    Sending Alt will trigger Ctrl+Shift+Win+Alt hotkey which opens url: https://go.microsoft.com/fwlink/?linkid=2044481 which redirects to: https://www.microsoft365.com/?auth=1
+    Office365 in browser 
+
+Monty Python — Today at 12:56 PM
+    source/window.cpp line 192
+    is_attached_my_to_fore = AttachThreadInput(g_MainThreadID, fore_thread, TRUE) != 0;
+
+    source/window.cpp line 260
+    KeyEvent(KEYDOWNANDUP, VK_MENU);
+
+Mr. Doge — Today at 1:07 PM
+    <https://devblogs.microsoft.com/oldnewthing/20090220-00/?p=19083>
+    A new process has foreground love
+
+    method1: con: requires another exe
+    ```ahk
+    Run "`"" A_LineFile "\..\SetForeGroundWindow.exe`" " hWnd
+    ```
+    method2: con: Slow
+    ```ahk
+    Run "cmd /c echo DllCall(`"SetForegroundWindow`",`"Ptr`"," hWnd ")|`"" A_AhkPath "`" *",,"Hide"
+    ```
+
+    Source: ?
+    Pressing Alt Allows any Window to call `SetForegroundWindow()`
+
+    method3:
+    release Shift if down (Solely to prevent Ctrl+Shift+Win+Alt hotkey triggering)
+    Send "{LAlt Down}"
+
+    restore Shift: `Send "{Blind}{Shift Down}"` if Shift was down
+
+    con: reliability over a 100 rounds, I'll write/edit until I get 100 over 100
+
+geek.ahk — Today at 1:29 PM
+    If I may recommend, use powershell rather than AHK for method 2
+    ChatGPT suggests something like 
+    ```ahk
+    Run "powershell.exe -ExecutionPolicy Bypass -Command `"Add-Type -Name Win32Functions -Namespace Win32Functions -MemberDefinition '[DllImport(\`"user32.dll\`")] public static extern [bool] SetForegroundWindow(IntPtr hWnd);'; [Win32Functions.Win32Functions]::SetForegroundWindow([IntPtr]::op_Explicit(" hWnd "))`""
+    ```
+    which does indeed look like code
+
+Gonzo 🦖 — Today at 1:39 PM
+    @Mr. Doge what are you trying? you want to get some Windows in foreground with the AHK script? without using the very slow AHK method? 
+Gonzo 🦖 — Today at 1:52 PM
+    the problem with SetForegroundWindow is it returns sometimes false positive. therefore it is not very accurate to check if the function was really successful. 
+    I have had good experiences when I use Send ALT UP 2 times and SetForegroundWindow in the loop a couple of times. what makes the window at least in 95% of cases in foreground. but does not prevent the flashing in the taskbar. 
+    U can also minimize the window and restore it that makes it 100% to foreground without flashing. 
+    If you dont want to minimize then the the last very good method is to register a hotkey with a unused virtual key and trigger it internal by just sending the virtual key by the script. this works in 100% and no flashing
+
+Reply to: Gonzo 🦖 — Today at 1:52 PM
+Mr. Doge — Today at 1:55 PM
+    > If you dont want to minimize then the the last very good method is to register a hotkey with a unused virtual key and trigger it internal by just sending the virtual key by the script. this works in 100% and no flashing
+    F22 ?
+    what hotkey do you suggest ?
+
+Gonzo 🦖 — Today at 1:56 PM
+    i use as example vk0xE8
+    you can register a normal hotkey with the script. just make sure its not affected by any HotIF and special prefixes. if you want also modifier keys you need register the hotkeys one by one
+
+Mr. Doge — Today at 1:59 PM
+    .ahk2
+    MsgBox GetKeyName("vk0xE8") ;nothing -> good
+    MsgBox GetKeyName("F22")
+
+Gonzo 🦖 — Today at 2:01 PM
+    just choice one of a unasigned or reserved key here. but its possible the key can be changed in the future 
+    https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+
+...
+insert code for SetForegroundWindow.ah2
+...
+
+Gonzo 🦖 — Today at 2:29 PM
+    you using the alt down method
+    i mean you find also a bit of it in the AHK scource code comments
+    to use Alt has kind of big disadvantages. 
+    to use a unused virtual key can have disadvantages but it doesn't have that big an impact. and you dont need all this checks because any Hotkey registerd with RegisterHotkey function has the forgroundlove by default
+
+Reply to: Gonzo 🦖 — Today at 2:29 PM
+Mr. Doge — Today at 2:34 PM
+    any 2nd registering of the virtual key uses k-hook, only the 1st instance is reg
+    assume two scripts #include this function:
+    so you'd need a way to find and use new and different virtual keys, and there's currently no way to detect if a virtual key is already registered
+
+
+Mr. Doge — Today at 2:42 PM
+    consider this script:
+    ```ahk
+    #SingleInstance Off
+    f1::{
+    }
+    ListHotkeys
+    ```
+
+    run 2 instances
+
+    on the 1st instance:
+    ```
+    Type    Off?    Level    Running    Name
+    -------------------------------------------------------------------
+    reg                f1
+    ```
+
+
+    on the 2nd instance:
+    ```
+    Type    Off?    Level    Running    Name
+    -------------------------------------------------------------------
+    k-hook                f1
+    ```
+
+Gonzo 🦖 — Today at 3:01 PM
+    ```ahk
+    hwnd := 0
+
+    Hotkey("vk0xE8", (*) => TestFunc())
+    Hotkey("^vk0xE8", (*) => TestFunc())
+    Hotkey("+vk0xE8", (*) => TestFunc())
+    Hotkey("!+#vk0xE8", (*) => TestFunc())
+
+
+    *h:: SetForeground("ahk_exe Notepad.exe")
+        
+
+    SetForeground(window) {
+        global
+        hwnd := WinExist(window)
+        Send("{Blind}{vk0xE8}")    
+    }
+
+    testfunc() {    
+        DllCall("SetForegroundWindow","Ptr",hwnd)
+    }
+    ```
+    simple example. I would do it in a class. so your virtual hotkeys will only registered once and you just need to change the variable content with the window hwnd and trigger the hotkey.
+    i just register multiple hotkeys here to simulate the *prefix so it still works with modifier keys without releasing it and put it down again like the normal send function does. but its up to you. its just a example 
+
+Reply to: Gonzo 🦖 — Today at 3:01 PM
+Mr. Doge — Today at 4:17 PM
+    I'm not talking about instances of hotkey modifiers: ["vk0xE8","^vk0xE8","+vk0xE8","!vk0xE8"]
+    I'm talking about how the same hotkey: "vk0xE8" can't be registered by multiple scripts
+    if `script1.ah2` uses vk0xE8::
+    then when `script2.ah2` uses vk0xE8::, it will be "k-hook" vk0xE8
+
+    my use case is:
+    mainscript.ah2: includes SetForeground.ah2, which uses vk0xE8::
+    ahk_explorer.ah2: includes SetForeground.ah2, which uses vk0xE8::, it will be "k-hook" vk0xE8
+
+Gonzo 🦖 — Today at 4:26 PM
+    Also yes you can only register one Hotkey system wide with the same key so it should just be overriden by a other script which is registering the same
+
+
+Reply to: Mr. Doge — Today at 12:56 PM
+Nikola — Today at 3:56 PM
+    why are u sending alt down before activating a window?
+
+Reply to: Nikola — Today at 3:56 PM
+Mr. Doge — Today at 4:19 PM
+    it seems that Ctrl+Win works too:
+    ...
+    insert code for SetForegroundWindow_CtrlWin.ah2
+    ...
+    if Alt is held down during the call to SetForegroundWindow(), it will succeed, there are other methods to make SetForegroundWindow() succeed too, but holding Alt is one

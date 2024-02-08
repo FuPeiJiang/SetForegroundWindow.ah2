@@ -1,0 +1,30 @@
+detect if thread is coming from keyboard hotkey
+if yes, then SetForegroundWindow
+
+detect if Alt is Down
+if yes, then SetForegroundWindow
+
+send, Alt Down
+SetForegroundWindow
+send, Alt Up
+
+
+do not test with ToolTip, because ToolTip actually allows you to call SetForegroundWindow, albeit randomly
+note: when SetForegroundWindow fails, the target window will flash flash flash, blink blink blink
+failure is not tolerated, even if you succeed, once the flashing starts, if you switch out too soon, the flashing won't stop, unless you also have a way to silence the flashing, but what if the flashing is intended, and you just silenced it, assuming the cause of the flashing was your script
+if you test repeatedly with !right::, you should see that it's not Running Alt Up, if you can chain the hotkey, !Right Right Right
+if you test with f1::, you should see that it's not Running Alt Down, if you put a MsgBox/ToolTip on Alt Down
+if you test with $!f1::, you should see that it's not Running Alt Down, if you put a MsgBox/ToolTip on Alt Down, Also, by the time the code is reached, Alt might as well be Up, so actually, press it down
+if you test with !f1:: it should quit because of the thread, not because of the ! being down.
+if you test with Right::, you should see it working in chain (indeed running Alt Down and Alt Up)
+
+I need to test for stability, I'll use an automated hotkey test of 100 rounds
+note:you can't send left right that will trigger hook
+
+do not use the same .ah2 script to test
+use testf1_hotkeys.ah2, and testf1_pressing.ah2
+
+Send "{Alt Down}" cancels any sort of Send "{Shift Down}", so you'll need to use: "{Blind}{Alt Down}"
+
+$^+#f1:: will fail because apparently, non blind "{Alt Down}" does not cancel it
+let's be explicit about it: Send "{Ctrl Up}{Shift Up}{Alt Down}"
