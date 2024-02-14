@@ -13,13 +13,19 @@ SetForegroundWindow(hwnd) {
         RAltDown:=GetKeyState("RAlt")
 
         if ((LCtrlDown || RCtrlDown) && (LWinDown || RWinDown)) {
+            toRelease:=""
             if (LShiftDown) {
-                DllCall("keybd_event","UChar",160,"UChar",42,"Uint",2,"Ptr",2) ;LShift Up
-            } else if (RShiftDown) {
-                DllCall("keybd_event","UChar",161,"UChar",310,"Uint",2,"Ptr",2) ;RShift Up
+                toRelease.="{LShift Up}"
+            }
+            if (RShiftDown) {
+                toRelease.="{RShift Up}"
+            }
+            if (toRelease) {
+                Send "{Blind}" toRelease
             }
         }
-        Send "{LAlt Down}"
+        Send "{LAlt Down}{LAlt Down}" ;more stable than single on test: testf1_hotkey_hooked_Ctrl_Win_Alt.ah2
+        ;Send "{LAlt Down}"
         DllCall("SetForegroundWindow","Ptr",hwnd)
 
         toAppend:=""

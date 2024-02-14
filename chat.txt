@@ -58,7 +58,7 @@ Monty Python — Today at 12:21 PM
     HotkeyTypeType mType;
 
 geek.ahk — Today at 12:29 PM
-    I'd be inclined to just write 
+    I'd be inclined to just write
     ```ahk
     if !DllCall("SetForegroundWindow", "Ptr", hwnd) {
         ; another strategy
@@ -94,7 +94,7 @@ Mr. Doge — Today at 12:56 PM
     https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/window.cpp#L260
     Assume the Hotkey is: ^+#something::, then you call WinActivate:
     Sending Alt will trigger Ctrl+Shift+Win+Alt hotkey which opens url: https://go.microsoft.com/fwlink/?linkid=2044481 which redirects to: https://www.microsoft365.com/?auth=1
-    Office365 in browser 
+    Office365 in browser
 
 Monty Python — Today at 12:56 PM
     source/window.cpp line 192
@@ -129,18 +129,18 @@ Mr. Doge — Today at 1:07 PM
 
 geek.ahk — Today at 1:29 PM
     If I may recommend, use powershell rather than AHK for method 2
-    ChatGPT suggests something like 
+    ChatGPT suggests something like
     ```ahk
     Run "powershell.exe -ExecutionPolicy Bypass -Command `"Add-Type -Name Win32Functions -Namespace Win32Functions -MemberDefinition '[DllImport(\`"user32.dll\`")] public static extern [bool] SetForegroundWindow(IntPtr hWnd);'; [Win32Functions.Win32Functions]::SetForegroundWindow([IntPtr]::op_Explicit(" hWnd "))`""
     ```
     which does indeed look like code
 
 Gonzo 🦖 — Today at 1:39 PM
-    @Mr. Doge what are you trying? you want to get some Windows in foreground with the AHK script? without using the very slow AHK method? 
+    @Mr. Doge what are you trying? you want to get some Windows in foreground with the AHK script? without using the very slow AHK method?
 Gonzo 🦖 — Today at 1:52 PM
-    the problem with SetForegroundWindow is it returns sometimes false positive. therefore it is not very accurate to check if the function was really successful. 
-    I have had good experiences when I use Send ALT UP 2 times and SetForegroundWindow in the loop a couple of times. what makes the window at least in 95% of cases in foreground. but does not prevent the flashing in the taskbar. 
-    U can also minimize the window and restore it that makes it 100% to foreground without flashing. 
+    the problem with SetForegroundWindow is it returns sometimes false positive. therefore it is not very accurate to check if the function was really successful.
+    I have had good experiences when I use Send ALT UP 2 times and SetForegroundWindow in the loop a couple of times. what makes the window at least in 95% of cases in foreground. but does not prevent the flashing in the taskbar.
+    U can also minimize the window and restore it that makes it 100% to foreground without flashing.
     If you dont want to minimize then the the last very good method is to register a hotkey with a unused virtual key and trigger it internal by just sending the virtual key by the script. this works in 100% and no flashing
 
 Reply to: Gonzo 🦖 — Today at 1:52 PM
@@ -159,7 +159,7 @@ Mr. Doge — Today at 1:59 PM
     MsgBox GetKeyName("F22")
 
 Gonzo 🦖 — Today at 2:01 PM
-    just choice one of a unasigned or reserved key here. but its possible the key can be changed in the future 
+    just choice one of a unasigned or reserved key here. but its possible the key can be changed in the future
     https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
 
 ...
@@ -169,7 +169,7 @@ insert code for SetForegroundWindow.ah2
 Gonzo 🦖 — Today at 2:29 PM
     you using the alt down method
     i mean you find also a bit of it in the AHK scource code comments
-    to use Alt has kind of big disadvantages. 
+    to use Alt has kind of big disadvantages.
     to use a unused virtual key can have disadvantages but it doesn't have that big an impact. and you dont need all this checks because any Hotkey registerd with RegisterHotkey function has the forgroundlove by default
 
 Reply to: Gonzo 🦖 — Today at 2:29 PM
@@ -216,20 +216,20 @@ Gonzo 🦖 — Today at 3:01 PM
 
 
     *h:: SetForeground("ahk_exe Notepad.exe")
-        
+
 
     SetForeground(window) {
         global
         hwnd := WinExist(window)
-        Send("{Blind}{vk0xE8}")    
+        Send("{Blind}{vk0xE8}")
     }
 
-    testfunc() {    
+    testfunc() {
         DllCall("SetForegroundWindow","Ptr",hwnd)
     }
     ```
     simple example. I would do it in a class. so your virtual hotkeys will only registered once and you just need to change the variable content with the window hwnd and trigger the hotkey.
-    i just register multiple hotkeys here to simulate the *prefix so it still works with modifier keys without releasing it and put it down again like the normal send function does. but its up to you. its just a example 
+    i just register multiple hotkeys here to simulate the *prefix so it still works with modifier keys without releasing it and put it down again like the normal send function does. but its up to you. its just a example
 
 Reply to: Gonzo 🦖 — Today at 3:01 PM
 Mr. Doge — Today at 4:17 PM

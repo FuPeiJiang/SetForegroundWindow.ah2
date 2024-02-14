@@ -34,6 +34,15 @@ runTest("testf1_hotkey_hooked_RAlt.ah2",RAlt) ;pair with >!f1::
 runTest("testf1_hotkey_hooked_RCtrl.ah2",RCtrl) ;pair with >^f1::
 runTest("testf1_hotkey_hooked_Ctrl_Shift_Win.ah2",Ctrl_RShift_Win) ;pair with $^+#f1::
 
+;with AllowSetForegroundWindow() branch commented out:
+;single {LAlt Down}
+;success_count:897
+;90 ;testf1_hotkey_Ctrl_Shift_Win.ah2
+;408 ;testf1_hotkey_hooked_Ctrl_Win_Alt.ah2
+;709 ;testf1_hotkey_hooked_RCtrl.ah2
+;double {LAlt Down}{LAlt Down}
+;success_count:900
+
 runTest(testName,modifiersToHoldDown) {
     global OutputVarPID
     Run "`"" A_AhkPath "`" `"" A_LineFile "\..\" testName "`"",,,&OutputVarPID
@@ -83,7 +92,7 @@ releaseAllModifiers() {
 
     DllCall("keybd_event", "uchar", GetKeyVK("RShift"), "uchar", GetKeySC("RShift"), "uint", 2, "ptr", 0)
     DllCall("keybd_event", "uchar", GetKeyVK("RCtrl"), "uchar", GetKeySC("RCtrl"), "uint", 2, "ptr", 0)
-    DllCall("keybd_event", "uchar", GetKeyVK("RAlt"), "uchar", GetKeySC("RAlt"), "uint", 2, "ptr", 0)
+    DllCall("keybd_event", "uchar", GetKeyVK("RAlt"), "uchar", 0, "uint", 2, "ptr", 0)
 }
 
 MsgBox A_Clipboard:=gather()
